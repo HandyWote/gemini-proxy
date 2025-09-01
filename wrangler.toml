@@ -1,0 +1,6 @@
+name = "gemini-proxy"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+
+[vars]
+GEMINI_API_URL = "https://generativelanguage.googleapis.com"
