@@ -1,12 +1,6 @@
-// Cloudflare Worker 入口文件
-// Gemini API 代理服务
 
-/**
- * 处理传入的请求并转发到 Gemini API
- * @param {Request} request - 原始请求对象
- * @param {object} env - 环境变量
- * @returns {Response} 转发后的响应
- */
+import OpenAI from 'openai';
+
 async function handleRequest(request, env) {
   // 处理 OPTIONS 请求以支持 CORS 预检
   if (request.method === 'OPTIONS') {
@@ -22,43 +16,52 @@ async function handleRequest(request, env) {
   }
 
   try {
-    // 从 env.GEMINI_API_URL 获取 Gemini API 基础 URL，如果未设置则默认为 https://generativelanguage.googleapis.com
-    const GEMINI_API_URL = env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com';
-    
-    // 构造目标 URL：将原始请求的路径和查询参数附加到 Gemini API 基础 URL
-    const url = new URL(request.url);
-    const targetUrl = GEMINI_API_URL + url.pathname + url.search;
-    
-    // 复制原始请求的 headers 到一个新的 Headers 对象
-    const headers = new Headers(request.headers);
-    
-    // 修改 Host 头为 Gemini API 的主机名
-    headers.set('Host', new URL(GEMINI_API_URL).host);
-    
-    // 创建一个新的请求对象，目标是构造好的 URL，使用原始请求的方法、headers 和 body
-    const geminiRequest = new Request(targetUrl, {
-      method: request.method,
-      headers: headers,
-      body: request.body,
-      redirect: 'follow'
+    // 从 env.OPENAI_API_KEY 获取 OpenAI API 密钥
+    const OPENAI_API_KEY = env.OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      return new Response(
+        JSON.stringify({
+          error: 'Missing API key',
+          message: 'OPENAI_API_KEY environment variable is not set'
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
+    }
+
+    // 创建 OpenAI 客户端实例
+    const openai = new OpenAI({
+      apiKey: OPENAI_API_KEY,
+      // 如果需要使用代理或其他自定义设置，可以在这里配置
     });
-    
-    // 使用 fetch 发送新构造的请求到 Gemini API
-    const geminiResponse = await fetch(geminiRequest);
-    
-    // 创建一个新的响应对象，复制 Gemini API 响应的状态码、headers 和 body
-    const response = new Response(geminiResponse.body, {
-      status: geminiResponse.status,
-      statusText: geminiResponse.statusText,
-      headers: geminiResponse.headers
+
+    // 解析请求体
+    const requestBody = await request.json();
+
+    // 调用 OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: requestBody.model || 'gpt-3.5-turbo',
+      messages: requestBody.messages || [],
+      // 可以传递其他参数
+      ...requestBody
     });
-    
-    // 为响应添加 CORS 头 (Access-Control-Allow-Origin: *)
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', '*');
-    
-    // 返回这个新的响应对象
+
+    // 创建响应对象
+    const response = new Response(JSON.stringify(completion), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': '*'
+      }
+    });
+
     return response;
   } catch (error) {
     // 在发生错误时，捕获异常并返回一个 JSON 格式的 500 错误响应，包含错误信息

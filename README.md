@@ -11,8 +11,6 @@
 ## 使用方法
 
 * 客户端只需将请求的 base URL 更改为代理服务的 URL。
-* 例如，原始请求是 `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY`。
-* 使用代理后应为 `POST https://your-worker.your-subdomain.workers.dev/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY`。
 * 注意：API Key 需要在请求中提供，代理服务不会存储或替换您的 API Key。
 
 ## 项目特点
