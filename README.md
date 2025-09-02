@@ -1,43 +1,32 @@
 # Gemini Proxy
 
-一个部署在 Cloudflare Worker 上的轻量级代理，用于转发请求到 Gemini API，从而避免需要使用代理访问。
+一个部署在 Cloudflare Worker 和 Vercel 上的轻量级代理，用于转发请求到 Gemini API，从而避免需要使用代理访问。
 
-## 🚀 新功能
+部分代码来自 [tech-shrimp/gemini-balance-lite](https://github.com/tech-shrimp/gemini-balance-lite) 仓库。
 
-基于 [openai-gemini](https://github.com/PublicAffairs/openai-gemini) 项目，现在支持完整的 OpenAI API 兼容性：
+## 新功能
 
-### ✅ 支持的端点
-- `/v1/chat/completions` - 聊天补全（支持流式和非流式）
-- `/v1/embeddings` - 文本嵌入
-- `/v1/models` - 获取可用模型列表
+本项目基于 [openai-gemini](https://github.com/PublicAffairs/openai-gemini) 项目，支持完整的 OpenAI API 兼容性，包括 `/v1/chat/completions` 聊天补全（支持流式和非流式）、`/v1/embeddings` 文本嵌入和 `/v1/models` 获取可用模型列表等功能。同时支持流式响应、函数调用、多模态输入（图像和音频）以及多种 Google Gemini 模型（如 `gemini-2.5-flash`、`gemini-2.5-pro`、`gemma-3-27b-it`、`learnlm-1.5-pro-experimental` 等）。
 
-### ✅ 增强功能
-- **流式响应** - 支持 Server-Sent Events (SSE)
-- **函数调用** - 支持 OpenAI 的函数调用功能
-- **多模态输入** - 支持图像和音频输入
-- **多模型支持** - 支持 Gemini、Gemma、LearnLM 系列模型
-- **CORS 支持** - 完全支持跨域请求
-
-## 🛠️ 部署说明
+## 部署说明
 
 ### 快速部署
 1. 克隆项目仓库
 2. 安装依赖：`npm install`
 3. 配置环境变量（可选）
 4. 部署到 Cloudflare Workers：`npm run deploy` 或 `wrangler deploy`
+5. 部署到 Vercel：直接推送到 Vercel 平台
 
 ### 本地测试
 ```bash
 npx wrangler dev
 ```
 
-## 📖 使用方法
+## 使用方法
 
-### 基本使用
-客户端只需将请求的 base URL 更改为代理服务的 URL：
+客户端只需将请求的 base URL 更改为代理服务的 URL。例如，将原本的 OpenAI API 调用：
 
 ```javascript
-// 原 OpenAI API 调用
 const response = await fetch('https://api.openai.com/v1/chat/completions', {
   method: 'POST',
   headers: {
@@ -49,8 +38,11 @@ const response = await fetch('https://api.openai.com/v1/chat/completions', {
     messages: [{ role: 'user', content: 'Hello!' }]
   })
 });
+```
 
-// 使用 Gemini Proxy
+修改为使用 Gemini Proxy：
+
+```javascript
 const response = await fetch('https://your-worker.your-subdomain.workers.dev/v1/chat/completions', {
   method: 'POST',
   headers: {
@@ -63,13 +55,6 @@ const response = await fetch('https://your-worker.your-subdomain.workers.dev/v1/
   })
 });
 ```
-
-### 支持的模型
-- `gemini-2.5-flash` (默认)
-- `gemini-2.5-pro`
-- `gemma-3-27b-it`
-- `learnlm-1.5-pro-experimental`
-- 以及其他 Google Gemini 模型
 
 ### 示例代码
 
@@ -102,40 +87,21 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/v1/embeddings \
   }'
 ```
 
-## 🔧 配置选项
+## 配置选项
 
-### Wrangler 配置
-在 `wrangler.toml` 中可以配置：
-- `name` - Worker 名称
-- `compatibility_date` - 兼容性日期
-- 环境变量等
+在 `wrangler.toml` 中可以配置 Worker 名称、兼容性日期等。环境变量 `GEMINI_API_URL` 用于设置 Gemini API 基础 URL，默认为 https://generativelanguage.googleapis.com/v1beta。
 
-### 环境变量
-- `GEMINI_API_URL` - Gemini API 基础 URL（默认：https://generativelanguage.googleapis.com/v1beta）
+## 项目特点
 
-## 🎯 项目特点
+本项目无状态，不存储任何 API Key 或用户数据，透明转发请求和响应，支持 CORS 跨域请求，完全兼容 OpenAI API，并基于 Cloudflare Workers 和 Vercel Edge Functions 边缘计算提供高性能。
 
-- **无状态**：不存储任何 API Key 或用户数据
-- **透明转发**：保持请求和响应的原始格式
-- **支持 CORS**：允许跨域请求
-- **完整兼容**：100% OpenAI API 兼容
-- **高性能**：基于 Cloudflare Workers 边缘计算
+## 注意事项
 
-## 📝 注意事项
+API Key 需要在请求中提供，代理服务不会存储或替换您的 API Key。使用时需注意 Google Gemini API 的速率限制，不同模型的可用性可能因地区和账户类型而异。
 
-1. **API Key 安全**：API Key 需要在请求中提供，代理服务不会存储或替换您的 API Key
-2. **速率限制**：受 Google Gemini API 的速率限制
-3. **模型可用性**：不同模型的可用性可能因地区和账户类型而异
+## 故障排除
 
-## 🐛 故障排除
+常见问题包括 CORS 错误（需确保请求头包含正确的 Authorization）、模型不可用（检查模型名称是否正确）和 API Key 无效（确认 API Key 有访问 Gemini API 的权限）。可以使用 `npx wrangler dev` 启动本地开发服务器查看详细日志进行调试。
 
-### 常见问题
-- **CORS 错误**：确保请求头包含正确的 Authorization
-- **模型不可用**：检查模型名称是否正确
-- **API Key 无效**：确认 API Key 有访问 Gemini API 的权限
-
-### 调试
-使用 `npx wrangler dev` 启动本地开发服务器，查看详细日志。
-
-## 📄 许可证
+## 许可证
 MIT License - 详见 LICENSE 文件
