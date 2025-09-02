@@ -3,3 +3,4 @@ CONFIGURATION.md
 node_modules/
 .wrangler
 .kilocode
+.vercel
