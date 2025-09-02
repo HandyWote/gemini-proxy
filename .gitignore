@@ -2,3 +2,4 @@ ARCHITECTURE.md
 CONFIGURATION.md
 node_modules/
 .wrangler
+.kilocode

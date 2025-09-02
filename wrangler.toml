@@ -1,6 +1,7 @@
 name = "gemini-proxy"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta"
